@@ -2,6 +2,7 @@ package br.com.alura.leilao.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Leilao implements Serializable {
@@ -18,13 +19,27 @@ public class Leilao implements Serializable {
         menorLance = Double.POSITIVE_INFINITY;
     }
 
-    public void propoe(Lance lance){
+    public void propoe(Lance lance) {
+        adicionaLance(lance);
         double valorLance = lance.getValor();
 
-        if (valorLance > maiorLance)
-            maiorLance = valorLance;
+        calculaMaiorLance(valorLance);
+        CalculaMenorLance(valorLance);
+    }
+
+    private void adicionaLance(Lance lance) {
+        lances.add(lance);
+        Collections.sort(lances);
+    }
+
+    private void CalculaMenorLance(double valorLance) {
         if (valorLance < menorLance)
             menorLance = valorLance;
+    }
+
+    private void calculaMaiorLance(double valorLance) {
+        if (valorLance > maiorLance)
+            maiorLance = valorLance;
     }
 
     public String getDescricao() {
@@ -37,5 +52,13 @@ public class Leilao implements Serializable {
 
     public double getMenorLance() {
         return menorLance;
+    }
+
+    public List<Lance> tresMaioresLances() {
+        int size = lances.size();
+        if (size > 3)
+            size = 3;
+
+        return lances.subList(0, size);
     }
 }
