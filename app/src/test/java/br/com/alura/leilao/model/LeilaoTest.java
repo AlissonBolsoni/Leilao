@@ -1,14 +1,29 @@
 package br.com.alura.leilao.model;
 
+import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.List;
 
+import br.com.alura.leilao.execption.LanceMenorQueUltimoLanceException;
+import br.com.alura.leilao.execption.LanceSeguidoDoMesmoUsuarioException;
+import br.com.alura.leilao.execption.UsuarioJaDeuCincoLancesException;
+
+import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.number.IsCloseTo.closeTo;
 import static org.junit.Assert.*;
 
 public class LeilaoTest {
 
     private static final double DELTA = 0.0001;
+    private static final String ERA_ESPERADO_UMA_RUNTIME_EXCEPTION = "Era esperado uma RuntimeException";
     private final Leilao CONSOLE = new Leilao("Console");
     private final Usuario ALEX = new Usuario("Alex");
 
@@ -16,16 +31,16 @@ public class LeilaoTest {
     public void deve_DevolverDescricao_QuandoRecebeDescricao() {
         String descricaoDevolvida = CONSOLE.getDescricao();
 
-        assertEquals("Console", descricaoDevolvida);
+        //assertEquals("Console", descricaoDevolvida);
+        assertThat(descricaoDevolvida, is("Console"));
     }
 
     @Test
     public void deve_DevolverMaiorLance_QuandoRecebeApenasUmLance() {
         CONSOLE.propoe(new Lance(ALEX, 200.0));
-
         double maiorLanceDevolvido = CONSOLE.getMaiorLance();
 
-        assertEquals(200.0, maiorLanceDevolvido, DELTA);
+        assertThat(maiorLanceDevolvido, closeTo(200.0, DELTA));
     }
 
     @Test
@@ -37,7 +52,7 @@ public class LeilaoTest {
 
         double maiorLanceDevolvido = CONSOLE.getMaiorLance();
 
-        assertEquals(200.0, maiorLanceDevolvido, DELTA);
+        assertThat(maiorLanceDevolvido, closeTo(200.0, DELTA));
     }
 
     @Test
@@ -46,7 +61,7 @@ public class LeilaoTest {
 
         double menorLanceDevolvidodo = CONSOLE.getMenorLance();
 
-        assertEquals(200.0, menorLanceDevolvidodo, DELTA);
+        assertThat(menorLanceDevolvidodo, closeTo(200.0, DELTA));
     }
 
     @Test
@@ -58,7 +73,7 @@ public class LeilaoTest {
 
         double menorLanceDevolvidodo = CONSOLE.getMenorLance();
 
-        assertEquals(100.0, menorLanceDevolvidodo, DELTA);
+        assertThat(menorLanceDevolvidodo, closeTo(100.0, DELTA));
     }
 
     @Test
@@ -69,10 +84,19 @@ public class LeilaoTest {
         CONSOLE.propoe(new Lance(ALEX, 400.0));
 
         List<Lance> tresMaioresLancesDevolvidos = CONSOLE.tresMaioresLances();
-        assertEquals(3, tresMaioresLancesDevolvidos.size());
-        assertEquals(400.0, tresMaioresLancesDevolvidos.get(0).getValor(), DELTA);
-        assertEquals(300.0, tresMaioresLancesDevolvidos.get(1).getValor(), DELTA);
-        assertEquals(200.0, tresMaioresLancesDevolvidos.get(2).getValor(), DELTA);
+
+//        assertThat(tresMaioresLancesDevolvidos, hasSize(3));
+        //assertThat(tresMaioresLancesDevolvidos, hasItem(new Lance(ALEX, 400.0)));
+
+//        assertEquals(400.0, tresMaioresLancesDevolvidos.get(0).getValor(), DELTA);
+//        assertEquals(300.0, tresMaioresLancesDevolvidos.get(1).getValor(), DELTA);
+//        assertEquals(200.0, tresMaioresLancesDevolvidos.get(2).getValor(), DELTA);
+
+        assertThat(tresMaioresLancesDevolvidos, both(Matchers.<Lance>hasSize(3)).and(contains(
+                new Lance(ALEX, 400.0),
+                new Lance(FRAN, 300.0),
+                new Lance(ALEX, 200.0)
+        )));
     }
 
     @Test
@@ -140,33 +164,20 @@ public class LeilaoTest {
         assertEquals(0.0, menorLanceDevolvido, DELTA);
     }
 
-    @Test
+    @Test(expected = LanceMenorQueUltimoLanceException.class)
     public void naoDeve_AdicionarLance_QuandoForMenorQueOMaiorLance() {
         final Usuario FRAN = new Usuario("Fran");
         CONSOLE.propoe(new Lance(ALEX, 200.0));
-        try {
-            CONSOLE.propoe(new Lance(FRAN, 100.0));
-            fail("Era esperado uma RuntimeException");
-        } catch (RuntimeException exception) {
-            assertEquals(Leilao.LANCE_EH_MENOR_QUE_O_MAIOR_LANCE, exception.getMessage());
-        }
-
-
+        CONSOLE.propoe(new Lance(FRAN, 100.0));
     }
 
-    @Test
+    @Test(expected = LanceSeguidoDoMesmoUsuarioException.class)
     public void naoDeve_AdicionarLance_QuandoForOMesmoUsuarioDoUltimoLance() {
         CONSOLE.propoe(new Lance(ALEX, 200.0));
-
-        try {
-            CONSOLE.propoe(new Lance(new Usuario("Alex"), 400.0));
-            fail("Era esperado uma RuntimeException");
-        } catch (RuntimeException exception) {
-            assertEquals(Leilao.USUARIO_EH_O_MESMO_DO_ULTIMO_LANCE, exception.getMessage());
-        }
+        CONSOLE.propoe(new Lance(new Usuario("Alex"), 400.0));
     }
 
-    @Test
+    @Test(expected = UsuarioJaDeuCincoLancesException.class)
     public void naoDeve_AdicionarLance_QuandoUsuarioDerMaisQueCincoLances() {
         final Usuario FRAN = new Usuario("Fran");
         CONSOLE.propoe(new Lance(FRAN, 100.0));
@@ -179,12 +190,6 @@ public class LeilaoTest {
         CONSOLE.propoe(new Lance(ALEX, 800.0));
         CONSOLE.propoe(new Lance(FRAN, 900.0));
         CONSOLE.propoe(new Lance(ALEX, 1000.0));
-
-        try {
-            CONSOLE.propoe(new Lance(FRAN, 1100.0));
-            fail("Era esperado uma RuntimeException");
-        } catch (RuntimeException exception) {
-            assertEquals(Leilao.USUARIO_JA_DEU_CINCO_LANCES, exception.getMessage());
-        }
+        CONSOLE.propoe(new Lance(FRAN, 1100.0));
     }
 }

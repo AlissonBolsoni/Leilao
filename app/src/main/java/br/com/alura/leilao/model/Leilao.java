@@ -5,11 +5,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import br.com.alura.leilao.execption.LanceMenorQueUltimoLanceException;
+import br.com.alura.leilao.execption.LanceSeguidoDoMesmoUsuarioException;
+import br.com.alura.leilao.execption.UsuarioJaDeuCincoLancesException;
+
 public class Leilao implements Serializable {
 
-    public static final String LANCE_EH_MENOR_QUE_O_MAIOR_LANCE = "Lance eh menor que o maior lance";
-    public static final String USUARIO_JA_DEU_CINCO_LANCES = "Usuário já deu cinco lances";
-    public static final String USUARIO_EH_O_MESMO_DO_ULTIMO_LANCE = "Usuario eh o mesmo do ultimo lance";
     private final String descricao;
     private final List<Lance> lances;
     private double maiorLance;
@@ -23,7 +24,7 @@ public class Leilao implements Serializable {
     }
 
     public void propoe(Lance lance) {
-        if (lanceNaoValido(lance)) return;
+        valida(lance);
 
         lances.add(lance);
 
@@ -32,7 +33,6 @@ public class Leilao implements Serializable {
 
         Collections.sort(lances);
         calculaMaiorLance(valorLance);
-        CalculaMenorLance(valorLance);
 
     }
 
@@ -45,19 +45,18 @@ public class Leilao implements Serializable {
         return false;
     }
 
-    private boolean lanceNaoValido(Lance lance) {
+    private void valida(Lance lance) {
         double valorLance = lance.getValor();
-        if (lanceMenorQueUltimoLance(valorLance)) throw new RuntimeException(LANCE_EH_MENOR_QUE_O_MAIOR_LANCE);
+        if (lanceMenorQueUltimoLance(valorLance)) throw new LanceMenorQueUltimoLanceException();
 
         if (temLances()) {
             Usuario usuarioNovo = lance.getUsuario();
 
-            if (usuarioEhOMesmoDoUltimoLance(usuarioNovo)) throw new RuntimeException(USUARIO_EH_O_MESMO_DO_ULTIMO_LANCE);
+            if (usuarioEhOMesmoDoUltimoLance(usuarioNovo)) throw new LanceSeguidoDoMesmoUsuarioException();
 
-            if (usuarioDeuCincoLances(usuarioNovo)) throw new RuntimeException(USUARIO_JA_DEU_CINCO_LANCES);
+            if (usuarioDeuCincoLances(usuarioNovo)) throw new UsuarioJaDeuCincoLancesException();
 
         }
-        return false;
     }
 
     private boolean temLances() {
@@ -85,11 +84,6 @@ public class Leilao implements Serializable {
     private boolean lanceMenorQueUltimoLance(double valorLance) {
         if (valorLance < maiorLance) return true;
         return false;
-    }
-
-    private void CalculaMenorLance(double valorLance) {
-        if (valorLance < menorLance)
-            menorLance = valorLance;
     }
 
     private void calculaMaiorLance(double valorLance) {
